@@ -41,7 +41,11 @@ async def load_avatar(http: httpx.AsyncClient, url: str | None) -> str | None:
         return None
 
 
-def render_html(ranking: WeeklyRanking, avatars: dict[str, str | None]) -> str:
+def render_html(
+    ranking: WeeklyRanking,
+    avatars: dict[str, str | None],
+    confindustria_members: frozenset[str],
+) -> str:
     environment = Environment(
         loader=PackageLoader("warera_rankings", "templates"),
         autoescape=select_autoescape(["html"]),
@@ -51,16 +55,17 @@ def render_html(ranking: WeeklyRanking, avatars: dict[str, str | None]) -> str:
     return environment.get_template("weekly.html").render(
         ranking=ranking,
         avatars=avatars,
-        confindustria_members=load_confindustria_members(),
+        confindustria_members=confindustria_members,
         last_day=ranking.week_end - timedelta(days=1),
     )
 
 
 async def render_image(ranking: WeeklyRanking, target: Path) -> Path:
     async with httpx.AsyncClient(timeout=8, follow_redirects=True) as http:
+        members = await load_confindustria_members(http)
         avatars = await asyncio.gather(*(load_avatar(http, row.avatar_url) for row in ranking.rows))
     html = render_html(
-        ranking, dict(zip((row.player_id for row in ranking.rows), avatars, strict=True))
+        ranking, dict(zip((row.player_id for row in ranking.rows), avatars, strict=True)), members
     )
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = None

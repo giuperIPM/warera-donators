@@ -1,26 +1,29 @@
-import json
 import re
-from importlib.resources import files
-from pathlib import Path
+
+import httpx
 
 from .domain import RankingError
 
+MEMBERS_URL = "https://confindustria-rust.vercel.app/players.json"
 
-def load_confindustria_members(source: Path | None = None) -> frozenset[str]:
-    resource = (
-        source
-        if source is not None
-        else files("warera_rankings").joinpath("data/confindustria.json")
-    )
+
+async def load_confindustria_members(http: httpx.AsyncClient) -> frozenset[str]:
     try:
-        members = json.loads(resource.read_text(encoding="utf-8"))
+        response = await http.get(MEMBERS_URL)
+        response.raise_for_status()
+    except httpx.HTTPError as error:
+        raise RankingError("Lista membri Confindustria non raggiungibile") from error
+    try:
+        members = response.json()
         if not isinstance(members, list) or any(
-            not isinstance(player_id, str) or not re.fullmatch(r"[a-f\d]{24}", player_id)
-            for player_id in members
+            not isinstance(member, dict)
+            or not isinstance(member.get("id"), str)
+            or not re.fullmatch(r"[a-f\d]{24}", member["id"])
+            for member in members
         ):
             raise ValueError
     except ValueError as error:
         raise RankingError(
-            "Lista membri Confindustria non valida: usare un array di ID WarEra"
+            "Lista membri Confindustria non valida: ID WarEra mancanti o invalidi"
         ) from error
-    return frozenset(members)
+    return frozenset(member["id"] for member in members)

@@ -14,6 +14,14 @@ from warera_rankings.image import italian_number, load_avatar, render_html, rend
 from warera_rankings.job import export
 
 
+@pytest.fixture(autouse=True)
+def membership_source(monkeypatch):
+    async def members(http):
+        return frozenset({"69e60890fe61f8ad03b860ba"})
+
+    monkeypatch.setattr("warera_rankings.image.load_confindustria_members", members)
+
+
 @pytest.fixture
 def ranking():
     return WeeklyRanking(
@@ -48,7 +56,7 @@ def ranking():
 
 def test_template_preserves_order_formats_numbers_and_escapes_names(ranking):
     ranking.rows[0].username = '<script>alert("x")</script>'
-    html = render_html(ranking, {})
+    html = render_html(ranking, {}, frozenset())
     assert "<script>" not in html
     assert "&lt;script&gt;" in html
     assert "12,346%" in html
@@ -61,7 +69,7 @@ def test_template_preserves_order_formats_numbers_and_escapes_names(ranking):
 def test_empty_and_provisional_ranking_is_explicit(ranking):
     ranking.rows = []
     ranking.coverage = "history_unverified"
-    html = render_html(ranking, {})
+    html = render_html(ranking, {}, frozenset())
     assert "Nessun player con rapporto calcolabile" in html
     assert "RISULTATO PROVVISORIO" in html
     assert italian_number(None) == "—"
@@ -107,7 +115,9 @@ def test_chromium_renders_png_without_clipping(ranking, tmp_path):
             browser = await playwright.chromium.launch()
             try:
                 page = await browser.new_page(viewport={"width": 1200, "height": 900})
-                await page.set_content(render_html(ranking, {}))
+                await page.set_content(
+                    render_html(ranking, {}, frozenset({"69e60890fe61f8ad03b860ba"}))
+                )
                 assert await page.locator("tbody tr").count() == 10
                 names = page.locator(".username")
                 gold = await page.locator(".edition").evaluate("el => getComputedStyle(el).color")
@@ -172,3 +182,17 @@ def test_image_command_renders_empty_ranking_without_changing_json(ranking, tmp_
     main()
     assert target.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
     assert source.read_bytes() == original
+
+
+def test_membership_failure_preserves_previous_png(ranking, tmp_path, monkeypatch):
+    target = tmp_path / "ranking.png"
+    target.write_bytes(b"previous")
+
+    async def unavailable(http):
+        raise RankingError("Lista membri Confindustria non raggiungibile")
+
+    monkeypatch.setattr("warera_rankings.image.load_confindustria_members", unavailable)
+    with pytest.raises(RankingError, match="Confindustria"):
+        asyncio.run(render_image(ranking, target))
+    assert target.read_bytes() == b"previous"
+    assert list(tmp_path.iterdir()) == [target]

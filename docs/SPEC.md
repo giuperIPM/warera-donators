@@ -54,13 +54,15 @@ a tre decimali, con separatori italiani. Titolo «Classifica settimanale donator
 e periodo senza etichetta UTC, seguiti direttamente dalla tabella. Nessun riepilogo
 di totali o conteggi. Bandierina e «WARERA / ITALIA» sulla stessa riga.
 Medaglie SVG oro, argento e bronzo per le prime tre posizioni; numeri per le successive.
-Membri Confindustria letti da `warera_rankings/data/confindustria.json`, array di ID
-incluso nel pacchetto e validato prima del rendering. Corrispondenza per ID, mai per nome.
+Membri Confindustria letti da `https://confindustria-rust.vercel.app/players.json`
+a ogni rendering: una GET pubblica senza chiave, timeout 8 secondi, nessun retry.
+Risposta: array di oggetti con `id` e `name`; estrarre e validare gli ID WarEra,
+deduplicandoli. Array vuoto valido. Corrispondenza per ID, mai per nome.
+Errori HTTP/rete o dati invalidi interrompono il rendering senza sostituire il PNG precedente.
+Nessuna lista locale sostitutiva o cache persistente.
 Nome dei membri oro (`#f0c776`, come «TOP 10»), altri bianco. Legenda in fondo:
 «Nome bianco = player», «Nome oro = membro Confindustria» e
 «Patrimonio al netto del valore delle aziende». Classifica JSON e ordinamento invariati.
-Lista iniziale: Giancarlo_Devasini `69e60890fe61f8ad03b860ba`,
-LordPirla `69d4dd1c70ab5601d0eb54d9`; ID e nomi verificati sulle API WarEra.
 Copertura non verificata segnalata come risultato provvisorio. Lista vuota gestita.
 
 Nomi sottoposti a escaping HTML. Avatar scaricati in parallelo con HTTPX, timeout 8 secondi,
@@ -106,6 +108,8 @@ rapporti non calcolabili, parser reale, batch parziale, retry/quota, job integra
 con rete simulata ed esportazione atomica. Ruff e pytest eseguiti anche in CI.
 Test grafici su escaping, formattazione, risultati vuoti/provvisori, fallback avatar,
 limiti download, PNG generato da Chromium, nomi lunghi e conservazione del PNG su errore.
+Lista membri verificata con HTTP simulato: schema, deduplicazione, lista vuota,
+timeout, errori HTTP e dati invalidi; colori verificati per ID con Chromium.
 
 Riferimenti: [API WarEra](https://api2.warera.io/docs/),
 [client di riferimento](https://github.com/WarEraProjects/api-client-py).

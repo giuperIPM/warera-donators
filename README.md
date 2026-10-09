@@ -71,10 +71,12 @@ Bandierina e «WARERA / ITALIA» sono sulla stessa riga.
 Le prime tre posizioni mostrano medaglie oro, argento e bronzo.
 I membri Confindustria hanno il nome oro come «TOP 10», gli altri bianco. In fondo:
 legenda dei colori e «Patrimonio al netto del valore delle aziende».
-La lista è in `warera_rankings/data/confindustria.json`: un array di ID WarEra.
-Aggiungere o rimuovere un ID e rigenerare il PNG; il confronto usa l'ID, non il nome.
-Membri iniziali verificati: Giancarlo_Devasini (`69e60890fe61f8ad03b860ba`) e
-LordPirla (`69d4dd1c70ab5601d0eb54d9`). JSON della classifica e ordine restano invariati.
+La lista viene aggiornata a ogni rendering dalla
+[API pubblica Confindustria](https://confindustria-rust.vercel.app/players.json).
+Formato: array di oggetti con `id` e `name`; il confronto usa solo l'ID.
+Una richiesta aggiuntiva, senza chiave, con timeout 8 secondi. Se la risposta è invalida
+o il servizio non è raggiungibile, il rendering termina con errore e conserva il PNG precedente.
+Nessuna lista locale sostitutiva. JSON della classifica e ordine restano invariati.
 Avatar non disponibili o invalidi sostituiti dall'iniziale del nome; nessun font esterno.
 Le immagini profilo vengono scaricate a ogni rendering: timeout 8 secondi e massimo 2 MB
 per avatar. Queste richieste sono aggiuntive rispetto alle chiamate alle API WarEra.
