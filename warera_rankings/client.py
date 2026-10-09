@@ -140,7 +140,14 @@ class WarEraClient:
                 companies = (
                     money(wealth["companies"]) if wealth.get("companies") is not None else None
                 )
-                profiles[player] = Profile(player, data["username"], total, companies)
+                avatar = data.get("avatarUrl")
+                avatar = avatar if isinstance(avatar, str) and avatar else None
+                leveling = data.get("leveling")
+                level = leveling.get("level") if isinstance(leveling, dict) else None
+                level = level if type(level) is int and level >= 0 else None
+                profiles[player] = Profile(
+                    player, data["username"], total, companies, avatar, level
+                )
             except (KeyError, TypeError, ValueError, InvalidOperation, RankingError):
                 continue
         return profiles

@@ -80,6 +80,8 @@ def test_profiles_use_one_batch_and_handle_individual_errors():
                     {
                         "_id": "a",
                         "username": "Alice",
+                        "avatarUrl": "https://media.warera.io/avatars/alice.jpg",
+                        "leveling": {"level": 26},
                         "stats": {
                             "wealth": {"total": 100.1, "companies": 20},
                         },
@@ -92,6 +94,29 @@ def test_profiles_use_one_batch_and_handle_individual_errors():
     profiles = execute(handler, lambda client: client.profiles(["a", "b"]))
     assert list(profiles) == ["a"]
     assert profiles["a"].wealth_total == Decimal("100.1")
+    assert profiles["a"].avatar_url == "https://media.warera.io/avatars/alice.jpg"
+    assert profiles["a"].level == 26
+
+
+def test_missing_optional_profile_fields_do_not_discard_wealth():
+    profiles = execute(
+        lambda _: httpx.Response(
+            200,
+            json=[
+                result(
+                    {
+                        "_id": "a",
+                        "username": "Alice",
+                        "stats": {"wealth": {"total": 100, "companies": 20}},
+                    }
+                )
+            ],
+        ),
+        lambda client: client.profiles(["a"]),
+    )
+    assert profiles["a"].wealth_total == 100
+    assert profiles["a"].avatar_url is None
+    assert profiles["a"].level is None
 
 
 def test_wrong_profile_id_is_not_assigned_to_another_player():

@@ -49,12 +49,16 @@ class Profile:
     username: str
     wealth_total: Decimal | None
     company_value: Decimal | None
+    avatar_url: str | None = None
+    level: int | None = None
 
 
 class RankingRow(BaseModel):
     position: int
     player_id: str
     username: str | None
+    avatar_url: str | None
+    level: int | None
     donated: Decimal
     donation_count: int
     wealth_total: Decimal | None

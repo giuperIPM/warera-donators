@@ -31,7 +31,9 @@ output `data/italy-YYYY-MM-DD.json` o directory indicata con `--output-dir`.
 JSON scritto atomicamente solo dopo il calcolo; errori non sostituiscono il file precedente.
 Timestamp UTC, totale donato, numero di donazioni/donatori, copertura e righe dei top 50.
 Ogni riga contiene posizione, ID/nome, importo, numero donazioni, wealth totale,
-valore aziende, P, percentuale e stato del profilo. Importi serializzati come stringhe decimali.
+valore aziende, P, percentuale e stato del profilo. Include `avatar_url` da `avatarUrl`
+e `level` da `leveling.level`, null se assenti. Sono letti nello stesso batch dei profili.
+Importi serializzati come stringhe decimali.
 Nessuna chiave o profilo integrale nel risultato o negli errori.
 
 Timeout HTTP 20 secondi, fino a 2 retry aggiuntivi per rete/429/5xx; rispettare header quota.

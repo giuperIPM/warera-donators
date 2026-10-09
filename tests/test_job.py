@@ -91,6 +91,8 @@ def test_job_fetches_closed_week_batches_profiles_and_exports(tmp_path, monkeypa
                         "data": {
                             "_id": "a",
                             "username": "Alice",
+                            "avatarUrl": "https://media.warera.io/avatars/alice.jpg",
+                            "leveling": {"level": 26},
                             "stats": {"wealth": {"total": 100, "companies": 50}},
                         }
                     }
@@ -110,5 +112,7 @@ def test_job_fetches_closed_week_batches_profiles_and_exports(tmp_path, monkeypa
     assert ranking.donation_count == 1
     assert data["rows"][0]["donated"] == "10"
     assert data["rows"][0]["ratio_percent"] == "20"
+    assert data["rows"][0]["avatar_url"] == "https://media.warera.io/avatars/alice.jpg"
+    assert data["rows"][0]["level"] == 26
     assert data["coverage"] == "week_boundary_reached"
     assert "test-key" not in path.read_text()

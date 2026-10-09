@@ -103,6 +103,8 @@ class RankingService:
             position=position,
             player_id=player,
             username=profile.username if profile else None,
+            avatar_url=profile.avatar_url if profile else None,
+            level=profile.level if profile else None,
             donated=donated,
             donation_count=count,
             wealth_total=total,
