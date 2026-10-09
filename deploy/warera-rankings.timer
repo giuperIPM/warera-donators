@@ -1,0 +1,10 @@
+[Unit]
+Description=Calculate completed WarEra week on Monday UTC
+
+[Timer]
+OnCalendar=Mon *-*-* 00:00:00 UTC
+AccuracySec=1s
+Persistent=true
+
+[Install]
+WantedBy=timers.target

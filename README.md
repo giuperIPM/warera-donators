@@ -1,8 +1,8 @@
-# WarEra Rankings
+# WarEra Donators
 
-Classifica della settimana corrente delle donazioni all'Italia: primi 50 player
-per importo e percentuale rispetto al patrimonio escluso aziende.
-Python, FastAPI, SQLite; esecuzione su server persistente.
+Job Python che calcola i primi 50 donatori all'Italia della settimana UTC appena conclusa.
+Esporta un JSON con importi, patrimonio escluso aziende e percentuale donata.
+Nessun database o processo HTTP persistente.
 
 ## Avvio
 
@@ -13,26 +13,41 @@ python -m pip install -e '.[dev]'
 cp .env.example .env
 ```
 
-Inserire `WARERA_API_KEY` in `.env`, poi avviare:
+Inserire la chiave in `.env`, quindi:
 
 ```bash
 set -a
 source .env
 set +a
-uvicorn app:app --host 127.0.0.1 --port 8000 --workers 1
+python -m warera_rankings
 ```
 
-Il server aggiorna subito la classifica e poi attende 15 minuti tra aggiornamenti.
-Le richieste HTTP leggono SQLite senza chiamare WarEra.
+Il comando calcola sempre l'ultima settimana conclusa, anche se eseguito dopo lunedì.
+Output: `data/italy-YYYY-MM-DD.json`, con la data di inizio settimana.
+La directory è modificabile con `--output-dir`. File `.env` e risultati sono ignorati da Git.
+Una nuova esecuzione sostituisce atomicamente il file della stessa settimana.
 
-- Classifica: <http://127.0.0.1:8000/api/rankings/weekly>
-- Stato: <http://127.0.0.1:8000/health>
-- Contratto HTTP: <http://127.0.0.1:8000/docs>
+Il wealth è quello osservato durante l'esecuzione, non un patrimonio storico recuperato
+alla chiusura. La percentuale può superare il 100% e non rappresenta una quota del guadagno settimanale.
+`coverage: history_unverified` identifica un risultato provvisorio.
 
-Prima del primo risultato l'endpoint restituisce 503. Senza chiave, gli aggiornamenti
-sono disabilitati. Dopo un errore resta disponibile la fotografia precedente con
-timestamp, errore e indicazione di obsolescenza. `history_unverified` indica una copertura
-settimanale non accertata: non trattare quel risultato come classifica completa.
+## Esecuzione automatica
+
+I modelli in `deploy/` eseguono il job ogni lunedì alle **00:00 UTC** con systemd.
+Installare il progetto in `/opt/warera-rankings`, creare l'utente `warera` e assegnargli
+accesso al progetto e alla directory dati. Installazione runtime: `python -m pip install -e .`.
+
+Copiare `deploy/warera-rankings.service` e `deploy/warera-rankings.timer` in
+`/etc/systemd/system/`, poi:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now warera-rankings.timer
+```
+
+Il timer è un modello, non è stato installato sul server. `Persistent=true` recupera
+un'attivazione persa, ma calcola solo l'ultima settimana conclusa: non effettua backfill.
+Conservare i JSON su disco persistente. Non è necessario lasciare il programma acceso.
 
 ## Test
 
@@ -42,23 +57,6 @@ ruff check .
 ruff format --check .
 ```
 
-I test usano risposte simulate e database temporanei, senza chiave né chiamate reali.
-La prova integrata autenticata delle donazioni è ancora da eseguire.
-La CI esegue test e lint su push e pull request.
-
-## Server
-
-Installare il progetto in `/opt/warera-rankings`, creare l'utente `warera` e assegnargli
-permessi sul progetto e sulla directory dati. Per l'ambiente di produzione bastano
-le dipendenze runtime: `python -m pip install -e .`.
-
-Il file [deploy/warera-rankings.service](deploy/warera-rankings.service) è un modello
-systemd con riavvio automatico e caricamento di `.env`. Copiarlo in `/etc/systemd/system/`,
-quindi eseguire `systemctl daemon-reload` e `systemctl enable --now warera-rankings`.
-Il modello non è ancora stato installato su un server. Esporre il servizio tramite reverse proxy HTTPS.
-
-Eseguire un solo worker e una sola istanza per evitare aggiornamenti duplicati.
-Conservare `data/` su disco persistente e includerla nei backup.
-SQLite salva fotografie delle classifiche, non tutte le transazioni originali.
-
-La [specifica](docs/SPEC.md) documenta formule, limiti e verifiche ancora aperte.
+CI su push e pull request. I test non accedono alla rete né richiedono una chiave.
+Schema delle donazioni e batch dei profili verificati con API reale il 9 ottobre 2026.
+La [specifica](docs/SPEC.md) descrive formule e limiti.

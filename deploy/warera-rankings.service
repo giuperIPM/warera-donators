@@ -4,13 +4,8 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=simple
+Type=oneshot
 User=warera
 WorkingDirectory=/opt/warera-rankings
 EnvironmentFile=/opt/warera-rankings/.env
-ExecStart=/opt/warera-rankings/.venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000 --workers 1
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
+ExecStart=/opt/warera-rankings/.venv/bin/python -m warera_rankings --output-dir /opt/warera-rankings/data

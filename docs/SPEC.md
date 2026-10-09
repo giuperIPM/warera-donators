@@ -1,80 +1,65 @@
-# Specifica — classifica settimanale Italia
+# Specifica — donazioni settimanali Italia
 
 ## Ambito
 
-Servizio Python 3.12 + FastAPI su server persistente, singolo processo.
-Solo Italia (`6813b6d446e731854c7ac7a2`), settimana corrente e primi 50 player
-per totale donato. Nessun parametro per altri Stati, periodi o dimensioni.
-Qualsiasi cittadinanza è ammessa: conta lo Stato destinatario.
+Job Python eseguito ogni lunedì alle 00:00 UTC. Italia soltanto
+(`6813b6d446e731854c7ac7a2`), primi 50 player per importo. Nessun database,
+server HTTP, aggiornamento continuo o frontend.
 
-## Calcolo
+## Periodo e calcolo
 
-- Settimana di calendario: lunedì 00:00–lunedì successivo, `Europe/Rome`.
-  Timestamp in UTC e intervallo `[inizio settimana, avvio aggiornamento)`.
-- `transaction.getPaginatedTransactions`: Italia, tipo `donation`, pagine da 100.
-  Cursori sequenziali; deduplicazione per transazione; verifica dell'ordine
-  decrescente osservato. Stop dopo una pagina contenente record precedenti alla settimana.
-- Somma decimale per player; ordine per importo decrescente, parità per ID crescente.
-- Un batch GET tRPC di `user.getUserById` per i primi 50, senza richieste alle aziende.
-- `patrimonio escluso aziende = stats.wealth.total − stats.wealth.companies`.
-- `percentuale = 100 × donazioni / patrimonio escluso aziende`, solo con patrimonio positivo.
-  Patrimonio mancante/non positivo: percentuale `null` e motivo. Nessun valore inventato.
-- La percentuale è una colonna dei top 50 per importo, non una classifica globale per rapporto.
-  Il denominatore è patrimonio attuale, non guadagno settimanale né sola liquidità.
-  Importi e percentuali serializzati come stringhe decimali.
+- Ultima settimana conclusa: `[lunedì precedente 00:00 UTC, lunedì corrente 00:00 UTC)`.
+  Il riferimento è l'istante di avvio; l'ora legale non modifica i confini.
+- Leggere `transaction.getPaginatedTransactions` con Italia, `donation`, `limit: 100`.
+  Risposta verificata: `items`, `nextCursor`; donatore `buyerId`, destinatario `sellerCountryId`.
+- Paginare dal più recente, saltando le donazioni della settimana corrente.
+  Deduplicare per `_id`, verificare ordine decrescente e filtrare destinatario e intervallo.
+  Fermarsi quando una pagina contiene una donazione precedente all'inizio del periodo.
+- Sommare con Decimal per player, indipendentemente dalla cittadinanza.
+  Ordinare per importo decrescente, parità per ID crescente; selezionare i primi 50.
+- Recuperare i profili con un solo batch GET tRPC `user.getUserById`, fino a 50 procedure.
+- `P = stats.wealth.total - stats.wealth.companies`; `percentuale = 100 * donazioni / P`.
+  Se mancano dati o `P <= 0`, percentuale null con motivo. Errori individuali batch:
+  mantenere l'importo e segnalare il profilo indisponibile.
+- P è patrimonio osservato durante l'esecuzione, non guadagno settimanale o sola liquidità.
+  Una riesecuzione può modificare P; non esiste recupero storico del wealth in questa versione.
 
-## Aggiornamento automatico
+## Esecuzione e output
 
-Un task avviato con il server calcola subito la classifica, poi attende 15 minuti
-tra aggiornamenti. SQLite salva una fotografia per settimana, aggiornata atomicamente;
-le settimane precedenti rimangono archiviate. Non è ancora un archivio delle singole donazioni
-né garantisce una fotografia definitiva alla chiusura della settimana.
-Un aggiornamento fallito mantiene il risultato precedente.
+Chiave da `WARERA_API_KEY`, header `X-API-Key`. Comando `python -m warera_rankings`,
+output `data/italy-YYYY-MM-DD.json` o directory indicata con `--output-dir`.
+JSON scritto atomicamente solo dopo il calcolo; errori non sostituiscono il file precedente.
+Timestamp UTC, totale donato, numero di donazioni/donatori, copertura e righe dei top 50.
+Ogni riga contiene posizione, ID/nome, importo, numero donazioni, wealth totale,
+valore aziende, P, percentuale e stato del profilo. Importi serializzati come stringhe decimali.
+Nessuna chiave o profilo integrale nel risultato o negli errori.
 
-Chiave: `WARERA_API_KEY`. Archivio: `WARERA_DATABASE`, default `data/rankings.sqlite3`.
-Senza chiave gli aggiornamenti sono disabilitati; eventuali fotografie restano consultabili.
-File `.env` caricabile da systemd o dalla shell, non automaticamente dall'applicazione.
-Eseguire una sola istanza e un solo worker Uvicorn per database/API key.
+Timeout HTTP 20 secondi, fino a 2 retry aggiuntivi per rete/429/5xx; rispettare header quota.
+Budget 240 secondi e massimo 200 pagine. Errori, cursori ciclici e ordine invalido interrompono
+il job con exit code 1. Costo HTTP: pagine lette + 1 batch, salvo retry; nessun batch senza donatori.
 
-Client HTTP asincrono con timeout 20 secondi, massimo 2 retry aggiuntivi per
-errori di rete, 429 e 5xx. Attesa secondo gli header di quota. Budget 240 secondi
-e massimo 200 pagine per aggiornamento: superamento o paginazione invalida non salva risultati parziali.
-Il numero HTTP è pagine lette + 1 batch profili, esclusi retry; senza donatori nessun batch.
+## Copertura e automazione
 
-## HTTP
+`week_boundary_reached`: oltrepassato l'inizio del periodo nello storico ordinato restituito
+dall'API; presuppone la continuità dei dati del provider. Se la paginazione termina prima,
+`history_unverified`: esportazione esplicitamente provvisoria, senza garanzia di completezza.
 
-- `GET /health`: processo disponibile, aggiornamenti abilitati, ultimo tentativo/errore.
-  Non è una garanzia di completezza dei dati.
-- `GET /api/rankings/weekly`: ultima fotografia, stato di aggiornamento e flag `stale`.
-  `stale` se i dati hanno più di 30 minuti o appartengono a un'altra settimana.
-  Prima fotografia non disponibile: 503 con `Retry-After: 30`.
-- Nessun endpoint pubblico di refresh; le letture non interrogano WarEra.
-  Risposte `no-store`, evitando che una cache nasconda lo stato aggiornato.
-- Ogni riga contiene posizione, ID/nome, somma e numero donazioni, wealth totale,
-  aziende, patrimonio escluso aziende, percentuale, stato del profilo.
-- Un errore di una singola procedura batch lascia disponibili gli importi e marca
-  il profilo come non disponibile. Fallimento dell'intera richiesta conserva la fotografia precedente.
+Timer systemd: lunedì 00:00 UTC, con recupero di un'attivazione persa.
+Nessun backfill di settimane più vecchie, nessuna distribuzione/pubblicazione automatica
+oltre al file locale. Una sola attivazione per chiave/output.
 
-## Completezza e verifiche aperte
+## Prova reale — 9 ottobre 2026
 
-`coverage: week_boundary_reached` indica che la scansione ha oltrepassato l'inizio
-della settimana; presuppone la continuità dello storico restituito dal provider.
-Se lo storico termina prima, `coverage: history_unverified`: risultato provvisorio,
-senza dichiarazione di completezza. Interruzioni, ordine crescente o cicli di cursori falliscono esplicitamente.
+Periodo 28 settembre–5 ottobre UTC: 587 donazioni, 170 donatori, totale 13963.859,
+50 profili validi. Scansione oltre l'inizio del periodo; 11 pagine e 1 batch (12 HTTP).
+Quota autenticata osservata: 500 richieste ogni 60 secondi. Questa esecuzione tardiva
+utilizza il wealth del 9 ottobre; non ricostruisce il patrimonio del 5 ottobre.
 
-Le donazioni richiedono una chiave. Prima dell'uso reale verificare envelope `items/nextCursor`,
-campi donatore/destinatario e retention: il parser supporta `buyerId/sellerCountryId`
-e `userId/countryId`, segnalando i dati ambigui. Quota autenticata e accessibilità dal server
-restano da misurare. Profili wealth e batch GET sono già stati provati senza chiave.
-Nessun token o profilo integrale è esposto nelle risposte o nei messaggi di errore.
+## Verifica automatica
 
-## Validazione
+Test su confini UTC, intervallo esclusivo, deduplicazione, top 50 e parità, precisione,
+rapporti non calcolabili, parser reale, batch parziale, retry/quota, job integrato
+con rete simulata ed esportazione atomica. Ruff e pytest eseguiti anche in CI.
 
-Test automatici: aggregazione/deduplicazione, confini e ora legale, top 50 e parità,
-rapporti non calcolabili, parser e batch con errori, retry/quota, persistenza,
-conservazione del risultato in caso di errore, lettura HTTP e ciclo automatico.
-Lint con Ruff. CI esegue gli stessi controlli su push e pull request.
-
-Fonti: [API WarEra](https://api2.warera.io/docs/),
-[client di riferimento](https://github.com/WarEraProjects/api-client-py),
-[pywarera](https://github.com/Marerjh/pywarera).
+Riferimenti: [API WarEra](https://api2.warera.io/docs/),
+[client di riferimento](https://github.com/WarEraProjects/api-client-py).
