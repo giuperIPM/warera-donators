@@ -1,0 +1,16 @@
+[Unit]
+Description=WarEra weekly Italy rankings
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=warera
+WorkingDirectory=/opt/warera-rankings
+EnvironmentFile=/opt/warera-rankings/.env
+ExecStart=/opt/warera-rankings/.venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000 --workers 1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
