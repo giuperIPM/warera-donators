@@ -15,9 +15,14 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<10", "ruff>=0.12,<1"]
+image = ["jinja2>=3.1.6,<4", "playwright>=1.55,<2"]
 
 [project.scripts]
 warera-rankings = "warera_rankings.job:main"
+warera-ranking-image = "warera_rankings.image:main"
+
+[tool.setuptools.package-data]
+warera_rankings = ["templates/*.html"]
 
 [tool.setuptools.packages.find]
 include = ["warera_rankings*"]

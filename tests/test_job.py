@@ -117,3 +117,24 @@ def test_job_fetches_closed_week_batches_profiles_and_exports(tmp_path, monkeypa
     assert data["rows"][0]["level"] == 26
     assert data["coverage"] == "week_boundary_reached"
     assert "test-key" not in path.read_text()
+
+
+def test_image_failure_exits_with_error_and_keeps_exported_json(tmp_path, monkeypatch):
+    from warera_rankings.job import main
+
+    ranking = snapshot()
+
+    async def calculate(api_key, directory):
+        return ranking, export(ranking, directory), 0
+
+    async def fail_image(ranking, target):
+        raise RankingError("Generazione PNG fallita")
+
+    monkeypatch.setattr("warera_rankings.job.run", calculate)
+    monkeypatch.setattr("warera_rankings.image.render_image", fail_image)
+    monkeypatch.setattr("sys.argv", ["warera-rankings", "--image", "--output-dir", str(tmp_path)])
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 1
+    target = tmp_path / f"italy-{ranking.week_start.date()}.json"
+    assert WeeklyRanking.model_validate_json(target.read_text()) == ranking

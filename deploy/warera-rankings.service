@@ -8,4 +8,4 @@ Type=oneshot
 User=warera
 WorkingDirectory=/opt/warera-rankings
 EnvironmentFile=/opt/warera-rankings/.env
-ExecStart=/opt/warera-rankings/.venv/bin/python -m warera_rankings --output-dir /opt/warera-rankings/data
+ExecStart=/opt/warera-rankings/.venv/bin/python -m warera_rankings --image --output-dir /opt/warera-rankings/data

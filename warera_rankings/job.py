@@ -45,11 +45,21 @@ def main() -> None:
         description="Top 10 per percentuale tra i 50 maggiori donatori Italia"
     )
     parser.add_argument("--output-dir", type=Path, default=Path("data"))
+    parser.add_argument("--image", action="store_true", help="Genera anche il PNG della classifica")
     args = parser.parse_args()
     try:
         ranking, path, requests = asyncio.run(
             run(os.environ.get("WARERA_API_KEY", ""), args.output_dir)
         )
+        if args.image:
+            try:
+                from .image import render_image
+            except ImportError as error:
+                raise RankingError(
+                    "Installare le dipendenze PNG: pip install -e '.[image]'"
+                ) from error
+            image = asyncio.run(render_image(ranking, path.with_suffix(".png")))
+            print(image)
     except (RankingError, TimeoutError, OSError) as error:
         parser.exit(1, f"Errore: {str(error) or type(error).__name__}\n")
     print(

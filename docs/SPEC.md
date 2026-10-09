@@ -4,7 +4,7 @@
 
 Job Python eseguito ogni lunedì alle 00:00 UTC. Italia soltanto
 (`6813b6d446e731854c7ac7a2`), top 10 per percentuale selezionata dai primi 50 player per importo. Nessun database,
-server HTTP, aggiornamento continuo o frontend.
+server HTTP, aggiornamento continuo o sito web. Template HTML/CSS locale per generare il PNG.
 
 ## Periodo e calcolo
 
@@ -40,6 +40,32 @@ e `level` da `leveling.level`, null se assenti. Sono letti nello stesso batch de
 Importi serializzati come stringhe decimali.
 Nessuna chiave o profilo integrale nel risultato o negli errori.
 
+## Grafica
+
+Extra `image`: Jinja2 e Playwright con Chromium headless installato per l'utente del job.
+`python -m warera_rankings --image` aggiunge il PNG all'esportazione JSON.
+`python -m warera_rankings.image <file.json> [--output <file.png>]` rigenera il PNG
+dal JSON esistente senza chiave o chiamate alle API WarEra. Schema e calcolo invariati.
+
+Template incluso nel pacchetto: `warera_rankings/templates/weekly.html`.
+Larghezza 1200 px e altezza adattata al contenuto. Righe nello stesso ordine del JSON:
+posizione, nome, avatar, livello, donazioni, patrimonio escluso aziende e percentuale
+a tre decimali, con separatori italiani. Periodo UTC, totali di tutti i donatori,
+campione iniziale, formula e istante di osservazione del patrimonio visibili.
+Copertura non verificata segnalata come risultato provvisorio. Lista vuota gestita.
+
+Nomi sottoposti a escaping HTML. Avatar scaricati in parallelo con HTTPX, timeout 8 secondi,
+limite 2 MB ciascuno, solo PNG/JPEG/WebP/GIF; errori o contenuti non decodificabili
+usano l'iniziale del nome. Immagini incorporate nel template, nessuna rete dal browser
+o font esterno. Il download degli avatar è aggiuntivo al costo HTTP delle API WarEra.
+Attendere decodifica immagini e font prima dello screenshot.
+
+Scrittura PNG atomica; un errore non sostituisce il PNG precedente. JSON e PNG sono
+esportazioni separate: un errore grafico lascia il JSON nuovo disponibile ed esce con
+codice 1. Il PNG precedente può quindi riferirsi a una precedente esecuzione.
+
+## Accesso API
+
 Timeout HTTP 20 secondi, fino a 2 retry aggiuntivi per rete/429/5xx; rispettare header quota.
 Budget 240 secondi e massimo 200 pagine. Errori, cursori ciclici e ordine invalido interrompono
 il job con exit code 1. Costo HTTP: pagine lette + 1 batch, salvo retry; nessun batch senza donatori.
@@ -51,8 +77,10 @@ dall'API; presuppone la continuità dei dati del provider. Se la paginazione ter
 `history_unverified`: esportazione esplicitamente provvisoria, senza garanzia di completezza.
 
 Timer systemd: lunedì 00:00 UTC, con recupero di un'attivazione persa.
-Nessun backfill di settimane più vecchie, nessuna distribuzione/pubblicazione automatica
-oltre al file locale. Una sola attivazione per chiave/output.
+Il servizio usa `--image` e genera JSON e PNG. Nessun backfill di settimane più vecchie,
+nessuna distribuzione/pubblicazione automatica oltre ai file locali.
+Pubblicazione su r/WarEraITA da integrare dopo approvazione dell'accesso API Reddit.
+Una sola attivazione per chiave/output.
 
 ## Prova reale — 9 ottobre 2026
 
@@ -67,6 +95,8 @@ Test su confini UTC, intervallo esclusivo, deduplicazione, selezione dei 50 cand
 top 10 per rapporto, esclusioni e parità, ordinamento prima dell'arrotondamento, precisione,
 rapporti non calcolabili, parser reale, batch parziale, retry/quota, job integrato
 con rete simulata ed esportazione atomica. Ruff e pytest eseguiti anche in CI.
+Test grafici su escaping, formattazione, risultati vuoti/provvisori, fallback avatar,
+limiti download, PNG generato da Chromium, nomi lunghi e conservazione del PNG su errore.
 
 Riferimenti: [API WarEra](https://api2.warera.io/docs/),
 [client di riferimento](https://github.com/WarEraProjects/api-client-py).
