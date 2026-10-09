@@ -42,7 +42,7 @@ async def run(api_key: str, directory: Path) -> tuple[WeeklyRanking, Path, int]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Top 50 donatori Italia della settimana UTC conclusa"
+        description="Top 10 per percentuale tra i 50 maggiori donatori Italia"
     )
     parser.add_argument("--output-dir", type=Path, default=Path("data"))
     args = parser.parse_args()

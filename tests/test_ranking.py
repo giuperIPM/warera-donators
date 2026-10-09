@@ -17,7 +17,7 @@ def donation(id, player="a", amount="10", at=None, country=ITALY_ID):
 class Gateway:
     def __init__(self, pages, profiles=None):
         self.pages = iter(pages)
-        self.data = profiles or {}
+        self.data = profiles
         self.requested_players = []
 
     async def donation_page(self, cursor):
@@ -25,7 +25,11 @@ class Gateway:
 
     async def profiles(self, players):
         self.requested_players = players
-        return self.data
+        if self.data is not None:
+            return self.data
+        return {
+            player: Profile(player, player, Decimal("1000"), Decimal("0")) for player in players
+        }
 
 
 def calculate(gateway, max_pages=200):
@@ -66,7 +70,9 @@ def test_top_50_and_deterministic_ties():
     items += [donation("tie", player="p60", amount="59")]
     gateway = Gateway([DonationPage(items, None)])
     result = calculate(gateway)
-    assert len(result.rows) == 50
+    assert len(result.rows) == 10
+    assert result.candidate_count == 50
+    assert len(gateway.requested_players) == 50
     assert gateway.requested_players[:2] == ["p59", "p60"]
     assert gateway.requested_players[-1] == "p11"
     assert result.donor_count == 61
@@ -84,7 +90,64 @@ def test_top_50_and_deterministic_ties():
 )
 def test_non_calculable_ratios(profile):
     result = calculate(Gateway([DonationPage([donation("1")], None)], {"a": profile}))
-    assert result.rows[0].ratio_percent is None
+    assert result.rows == []
+    assert result.candidate_count == 1
+
+
+def test_final_top_10_is_by_ratio_within_the_top_50_by_donations():
+    items = [
+        donation(str(index), player=f"p{index:02}", amount=str(index + 1)) for index in range(60)
+    ]
+    profiles = {
+        f"p{index:02}": Profile(f"p{index:02}", str(index), Decimal("1000"), Decimal("0"))
+        for index in range(60)
+    }
+    profiles["p10"] = Profile("p10", "Small wealth", Decimal("1"), Decimal("0"))
+    profiles["p00"] = Profile("p00", "Outside candidates", Decimal("0.01"), Decimal("0"))
+    gateway = Gateway([DonationPage(items, None)], profiles)
+    result = calculate(gateway)
+    assert len(result.rows) == 10
+    assert result.rows[0].player_id == "p10"
+    assert "p00" not in gateway.requested_players
+    assert [row.position for row in result.rows] == list(range(1, 11))
+
+
+def test_ratio_ordering_precedes_display_rounding():
+    gateway = Gateway(
+        [
+            DonationPage(
+                [donation("1", player="a", amount="2"), donation("2", player="b", amount="1")], None
+            )
+        ],
+        {
+            "a": Profile("a", "Alice", Decimal("200"), Decimal("0")),
+            "b": Profile("b", "Bob", Decimal("99.996"), Decimal("0")),
+        },
+    )
+    rows = calculate(gateway).rows
+    assert [row.player_id for row in rows] == ["b", "a"]
+    assert all(row.ratio_percent == Decimal("1.000") for row in rows)
+
+
+def test_equal_ratios_are_ordered_by_donations_then_id():
+    gateway = Gateway(
+        [
+            DonationPage(
+                [
+                    donation("1", player="a", amount="10"),
+                    donation("2", player="b", amount="20"),
+                    donation("3", player="c", amount="20"),
+                ],
+                None,
+            )
+        ],
+        {
+            "a": Profile("a", "Alice", Decimal("100"), Decimal("0")),
+            "b": Profile("b", "Bob", Decimal("200"), Decimal("0")),
+            "c": Profile("c", "Chris", Decimal("200"), Decimal("0")),
+        },
+    )
+    assert [row.player_id for row in calculate(gateway).rows] == ["b", "c", "a"]
 
 
 @pytest.mark.parametrize(

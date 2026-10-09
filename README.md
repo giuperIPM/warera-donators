@@ -1,8 +1,13 @@
 # WarEra Donators
 
-Job Python che calcola i primi 50 donatori all'Italia della settimana UTC appena conclusa.
-Esporta un JSON con importi, patrimonio escluso aziende e percentuale donata.
+Job Python che seleziona i primi 50 donatori all'Italia per importo nella settimana UTC
+appena conclusa e pubblica i primi 10 per percentuale sul patrimonio escluso aziende.
+Esporta un JSON con foto profilo, livello, importi, patrimonio e percentuale a tre decimali.
 Nessun database o processo HTTP persistente.
+
+La top 10 riguarda esclusivamente i 50 candidati: il rapporto viene ordinato prima
+dell'arrotondamento. Parità: importo donato decrescente, poi ID crescente.
+Candidati con rapporto non calcolabile esclusi; il risultato può contenere meno di 10 player.
 
 ## Avvio
 

@@ -20,6 +20,7 @@ def snapshot():
         wealth_observed_at=datetime.now(UTC),
         coverage="week_boundary_reached",
         donor_count=0,
+        candidate_count=0,
         donation_count=0,
         donated_total="0",
         rows=[],

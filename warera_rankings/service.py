@@ -5,6 +5,7 @@ from typing import Protocol
 
 from .domain import (
     ITALY_ID,
+    MAX_CANDIDATES,
     TOP_PLAYERS,
     DonationPage,
     Profile,
@@ -63,12 +64,25 @@ class RankingService:
         else:
             raise RankingError("Limite di pagine raggiunto prima di completare la scansione")
 
-        player_ids = sorted(totals, key=lambda player: (-totals[player], player))[:TOP_PLAYERS]
+        player_ids = sorted(totals, key=lambda player: (-totals[player], player))[:MAX_CANDIDATES]
         wealth_observed_at = datetime.now(UTC)
         profiles = await self.gateway.profiles(player_ids) if player_ids else {}
         rows = [
             self._row(index, player, totals[player], counts[player], profiles.get(player))
             for index, player in enumerate(player_ids, start=1)
+        ]
+        eligible = [row for row in rows if row.ratio_percent is not None]
+        eligible.sort(key=lambda row: (-row.ratio_percent, -row.donated, row.player_id))
+        finalists = [
+            row.model_copy(
+                update={
+                    "position": position,
+                    "ratio_percent": row.ratio_percent.quantize(
+                        Decimal("0.001"), rounding=ROUND_HALF_UP
+                    ),
+                }
+            )
+            for position, row in enumerate(eligible[:TOP_PLAYERS], start=1)
         ]
         return WeeklyRanking(
             week_start=week.start,
@@ -78,9 +92,10 @@ class RankingService:
             wealth_observed_at=wealth_observed_at,
             coverage=coverage,
             donor_count=len(totals),
+            candidate_count=len(player_ids),
             donation_count=sum(counts.values()),
             donated_total=sum(totals.values(), Decimal(0)),
-            rows=rows,
+            rows=finalists,
         )
 
     @staticmethod
@@ -90,11 +105,7 @@ class RankingService:
         total = profile.wealth_total if profile else None
         companies = profile.company_value if profile else None
         available = total - companies if total is not None and companies is not None else None
-        ratio = (
-            (donated * 100 / available).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
-            if available is not None and available > 0
-            else None
-        )
+        ratio = donated * 100 / available if available is not None and available > 0 else None
         return RankingRow(
             position=position,
             player_id=player,

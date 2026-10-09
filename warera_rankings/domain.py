@@ -5,7 +5,8 @@ from decimal import Decimal
 from pydantic import BaseModel
 
 ITALY_ID = "6813b6d446e731854c7ac7a2"
-TOP_PLAYERS = 50
+MAX_CANDIDATES = 50
+TOP_PLAYERS = 10
 
 
 class RankingError(Exception):
@@ -77,6 +78,7 @@ class WeeklyRanking(BaseModel):
     wealth_observed_at: datetime
     coverage: str
     donor_count: int
+    candidate_count: int
     donation_count: int
     donated_total: Decimal
     rows: list[RankingRow]
