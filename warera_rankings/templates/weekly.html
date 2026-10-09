@@ -13,15 +13,11 @@
     .tricolor span:last-child { background: #e66063; }
     .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 3px; color: #9aafbe; }
     header { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
-    h1 { margin: 9px 0 10px; font-size: 44px; letter-spacing: -1.5px; }
+    h1 { margin: 9px 0 10px; font-size: 36px; letter-spacing: -1px; }
     .period { color: #b8c7d4; font-size: 17px; }
     .edition { text-align: right; color: #f0c776; font-size: 64px; font-weight: 700; letter-spacing: -3px; }
-    .edition small { display: block; color: #9aafbe; font-size: 12px; letter-spacing: 2px; }
-    .stats { display: flex; gap: 48px; padding: 25px 0; margin: 26px 0 12px; border-top: 1px solid #314050; border-bottom: 1px solid #314050; }
-    .stats strong { display: block; font-size: 25px; margin-bottom: 5px; }
-    .stats span { color: #9aafbe; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
     .status { color: #f0c776; font-size: 13px; margin: 20px 0; }
-    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    table { margin-top: 28px; width: 100%; border-collapse: collapse; table-layout: fixed; }
     th { color: #9aafbe; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; text-align: right; padding: 17px 12px; font-weight: 400; }
     th:first-child { width: 62px; text-align: left; }
     th:nth-child(2) { width: 362px; text-align: left; }
@@ -39,9 +35,6 @@
     .level { display: block; color: #9aafbe; font-size: 12px; margin-top: 5px; }
     .ratio { font-size: 21px; font-weight: 700; }
     .empty { text-align: center; padding: 55px; color: #b8c7d4; }
-    footer { padding-top: 24px; color: #9aafbe; font-size: 12px; line-height: 1.8; }
-    .formula { color: #d7e2ed; margin-bottom: 7px; }
-    .credits { display: flex; justify-content: space-between; margin-top: 18px; font-size: 11px; letter-spacing: 1px; }
   </style>
 </head>
 <body>
@@ -50,21 +43,16 @@
   <header>
     <div>
       <div class="eyebrow">WARERA / ITALIA</div>
-      <h1>Chi sostiene l’Italia</h1>
-      <div class="period">{{ ranking.week_start.strftime('%d.%m.%Y') }} — {{ last_day.strftime('%d.%m.%Y') }} · UTC</div>
+      <h1>Classifica settimanale donatori</h1>
+      <div class="period">{{ ranking.week_start.strftime('%d.%m.%Y') }} — {{ last_day.strftime('%d.%m.%Y') }}</div>
     </div>
-    <div class="edition">TOP 10<small>CLASSIFICA SETTIMANALE</small></div>
+    <div class="edition">TOP 10</div>
   </header>
-  <div class="stats">
-    <div><strong>{{ ranking.donated_total | number }}</strong><span>Donazioni totali all’Italia</span></div>
-    <div><strong>{{ ranking.donor_count }}</strong><span>Donatori</span></div>
-    <div><strong>{{ ranking.donation_count }}</strong><span>Donazioni</span></div>
-  </div>
   {% if ranking.coverage == 'history_unverified' %}
   <p class="status">RISULTATO PROVVISORIO · Copertura dello storico non verificata</p>
   {% endif %}
   <table>
-    <thead><tr><th>Pos.</th><th>Player</th><th>Donazioni</th><th>Patrimonio*</th><th>Rapporto</th></tr></thead>
+    <thead><tr><th>Pos.</th><th>Player</th><th>Donazioni</th><th>Patrimonio</th><th>Rapporto</th></tr></thead>
     <tbody>
     {% for row in ranking.rows %}
       <tr{% if row.position <= 3 %} class="podium"{% endif %}>
@@ -85,13 +73,6 @@
     {% endfor %}
     </tbody>
   </table>
-  <footer>
-    <div class="formula">Rapporto = donazioni settimanali ÷ patrimonio escluso aziende × 100</div>
-    Top 10 per rapporto tra i primi {{ ranking.candidate_count }} donatori per importo. Totali riferiti a tutti i donatori.<br>
-    * Patrimonio osservato il {{ ranking.wealth_observed_at.strftime('%d.%m.%Y alle %H:%M') }} UTC, escluso il valore delle aziende.<br>
-    Il rapporto può superare il 100% e non misura il guadagno settimanale.
-    <div class="credits"><span>r/WarEraITA</span><span>DATI: API WARERA</span></div>
-  </footer>
 </main>
 </body>
 </html>

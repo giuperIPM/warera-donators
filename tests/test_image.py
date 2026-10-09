@@ -51,13 +51,11 @@ def test_template_preserves_order_formats_numbers_and_escapes_names(ranking):
     html = render_html(ranking, {})
     assert "<script>" not in html
     assert "&lt;script&gt;" in html
-    assert "13.963,859" in html
     assert "12,346%" in html
     assert "Livello 26" in html
     assert "28.09.2026 — 04.10.2026" in html
     assert html.index("&lt;script&gt;") < html.index("Alice")
     assert "RISULTATO PROVVISORIO" not in html
-    assert "non misura il guadagno settimanale" in html
 
 
 def test_empty_and_provisional_ranking_is_explicit(ranking):

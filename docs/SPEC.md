@@ -50,8 +50,9 @@ dal JSON esistente senza chiave o chiamate alle API WarEra. Schema e calcolo inv
 Template incluso nel pacchetto: `warera_rankings/templates/weekly.html`.
 Larghezza 1200 px e altezza adattata al contenuto. Righe nello stesso ordine del JSON:
 posizione, nome, avatar, livello, donazioni, patrimonio escluso aziende e percentuale
-a tre decimali, con separatori italiani. Periodo UTC, totali di tutti i donatori,
-campione iniziale, formula e istante di osservazione del patrimonio visibili.
+a tre decimali, con separatori italiani. Titolo «Classifica settimanale donatori»
+e periodo senza etichetta UTC, seguiti direttamente dalla tabella. Nessun riepilogo
+di totali o conteggi e nessuna nota in calce.
 Copertura non verificata segnalata come risultato provvisorio. Lista vuota gestita.
 
 Nomi sottoposti a escaping HTML. Avatar scaricati in parallelo con HTTPX, timeout 8 secondi,
