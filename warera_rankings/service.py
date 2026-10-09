@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import UTC, datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Protocol
 
 from .domain import (
@@ -90,15 +90,11 @@ class RankingService:
         total = profile.wealth_total if profile else None
         companies = profile.company_value if profile else None
         available = total - companies if total is not None and companies is not None else None
-        ratio = donated * 100 / available if available is not None and available > 0 else None
-        if profile is None:
-            status = "unavailable"
-        elif available is None:
-            status = "wealth_missing"
-        elif available <= 0:
-            status = "non_positive_wealth"
-        else:
-            status = "ok"
+        ratio = (
+            (donated * 100 / available).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
+            if available is not None and available > 0
+            else None
+        )
         return RankingRow(
             position=position,
             player_id=player,
@@ -111,5 +107,4 @@ class RankingService:
             company_value=companies,
             wealth_without_companies=available,
             ratio_percent=ratio,
-            profile_status=status,
         )

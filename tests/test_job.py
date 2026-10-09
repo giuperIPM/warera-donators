@@ -111,7 +111,7 @@ def test_job_fetches_closed_week_batches_profiles_and_exports(tmp_path, monkeypa
     assert calls == len(requests) == 2
     assert ranking.donation_count == 1
     assert data["rows"][0]["donated"] == "10"
-    assert data["rows"][0]["ratio_percent"] == "20"
+    assert data["rows"][0]["ratio_percent"] == "20.000"
     assert data["rows"][0]["avatar_url"] == "https://media.warera.io/avatars/alice.jpg"
     assert data["rows"][0]["level"] == 26
     assert data["coverage"] == "week_boundary_reached"

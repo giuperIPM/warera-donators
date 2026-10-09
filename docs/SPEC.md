@@ -19,8 +19,8 @@ server HTTP, aggiornamento continuo o frontend.
   Ordinare per importo decrescente, parità per ID crescente; selezionare i primi 50.
 - Recuperare i profili con un solo batch GET tRPC `user.getUserById`, fino a 50 procedure.
 - `P = stats.wealth.total - stats.wealth.companies`; `percentuale = 100 * donazioni / P`.
-  Se mancano dati o `P <= 0`, percentuale null con motivo. Errori individuali batch:
-  mantenere l'importo e segnalare il profilo indisponibile.
+  Arrotondare a tre decimali con ROUND_HALF_UP. Se mancano dati o `P <= 0`, percentuale null.
+  Errori individuali batch: mantenere l'importo e lasciare null i dati del profilo.
 - P è patrimonio osservato durante l'esecuzione, non guadagno settimanale o sola liquidità.
   Una riesecuzione può modificare P; non esiste recupero storico del wealth in questa versione.
 
@@ -31,7 +31,7 @@ output `data/italy-YYYY-MM-DD.json` o directory indicata con `--output-dir`.
 JSON scritto atomicamente solo dopo il calcolo; errori non sostituiscono il file precedente.
 Timestamp UTC, totale donato, numero di donazioni/donatori, copertura e righe dei top 50.
 Ogni riga contiene posizione, ID/nome, importo, numero donazioni, wealth totale,
-valore aziende, P, percentuale e stato del profilo. Include `avatar_url` da `avatarUrl`
+valore aziende, P e percentuale. Include `avatar_url` da `avatarUrl`
 e `level` da `leveling.level`, null se assenti. Sono letti nello stesso batch dei profili.
 Importi serializzati come stringhe decimali.
 Nessuna chiave o profilo integrale nel risultato o negli errori.

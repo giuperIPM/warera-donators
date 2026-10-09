@@ -65,7 +65,6 @@ class RankingRow(BaseModel):
     company_value: Decimal | None
     wealth_without_companies: Decimal | None
     ratio_percent: Decimal | None
-    profile_status: str
 
 
 class WeeklyRanking(BaseModel):

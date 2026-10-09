@@ -74,18 +74,37 @@ def test_top_50_and_deterministic_ties():
 
 
 @pytest.mark.parametrize(
-    "profile,status",
+    "profile",
     [
-        (None, "unavailable"),
-        (Profile("a", "Alice", None, Decimal("0")), "wealth_missing"),
-        (Profile("a", "Alice", Decimal("10"), Decimal("10")), "non_positive_wealth"),
-        (Profile("a", "Alice", Decimal("10"), Decimal("20")), "non_positive_wealth"),
+        None,
+        Profile("a", "Alice", None, Decimal("0")),
+        Profile("a", "Alice", Decimal("10"), Decimal("10")),
+        Profile("a", "Alice", Decimal("10"), Decimal("20")),
     ],
 )
-def test_non_calculable_ratios(profile, status):
+def test_non_calculable_ratios(profile):
     result = calculate(Gateway([DonationPage([donation("1")], None)], {"a": profile}))
     assert result.rows[0].ratio_percent is None
-    assert result.rows[0].profile_status == status
+
+
+@pytest.mark.parametrize(
+    "amount,wealth,expected",
+    [
+        ("1", "3", "33.333"),
+        ("1", "6", "16.667"),
+        ("0.012345", "1000", "0.001"),
+        ("0.012355", "1000", "0.001"),
+        ("0.015", "1000", "0.002"),
+    ],
+)
+def test_ratio_is_serialized_with_three_decimal_places(amount, wealth, expected):
+    gateway = Gateway(
+        [DonationPage([donation("1", amount=amount)], None)],
+        {"a": Profile("a", "Alice", Decimal(wealth), Decimal("0"))},
+    )
+    row = calculate(gateway).rows[0].model_dump(mode="json")
+    assert row["ratio_percent"] == expected
+    assert "profile_status" not in row
 
 
 def test_no_donations_skips_profile_request():
