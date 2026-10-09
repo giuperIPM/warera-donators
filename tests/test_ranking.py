@@ -178,6 +178,39 @@ def test_no_donations_skips_profile_request():
     assert gateway.requested_players == []
 
 
+def test_quit_exclusion_replenishes_top_10_within_original_50_candidates():
+    from warera_rankings.config import QuitConfig
+    from warera_rankings.domain import Activity
+
+    items = [donation(str(index), player=f"p{index:02}", amount="100") for index in range(51)]
+    items.insert(0, donation("quit-extra", player="p00", amount="100"))
+    profiles = {
+        f"p{index:02}": Profile(f"p{index:02}", str(index), Decimal("1000"), Decimal("0"))
+        for index in range(51)
+    }
+    profiles["p00"] = Profile(
+        "p00",
+        "Liquidating",
+        Decimal("10050"),
+        Decimal("10000"),
+        activity=Activity(money=0, equipment_value=0),
+    )
+    config = QuitConfig(enabled=True)
+    gateway = Gateway([DonationPage(items, None)], profiles)
+    ranking = asyncio.run(RankingService(gateway, quit_config=config).calculate(NOW))
+    assert len(gateway.requested_players) == 50
+    assert "p50" not in gateway.requested_players
+    assert [row.player_id for row in ranking.rows] == [f"p{i:02}" for i in range(1, 11)]
+    assert [row.position for row in ranking.rows] == list(range(1, 11))
+    assert ranking.quit_exclusions[0].player_id == "p00"
+    assert ranking.donated_total == 5200
+    assert ranking.donor_count == 51
+
+    disabled = calculate(Gateway([DonationPage(items, None)], profiles))
+    assert disabled.rows[0].player_id == "p00"
+    assert "quit_exclusions" not in disabled.model_dump(mode="json")
+
+
 @pytest.mark.parametrize(
     "pages",
     [

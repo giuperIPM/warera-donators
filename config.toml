@@ -1,0 +1,11 @@
+[quit_detection]
+enabled = true
+minimum_signals = 4
+max_weekly_works = 5
+max_weekly_missions = 5
+inactive_days = 3
+max_money = 10
+max_equipment_value = 100
+max_company_value = 1000
+concentration_minutes = 10
+concentration_share = 0.8

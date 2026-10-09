@@ -119,6 +119,37 @@ def test_missing_optional_profile_fields_do_not_discard_wealth():
     assert profiles["a"].level is None
 
 
+def test_activity_parser_uses_recent_missions_and_tolerates_bad_optional_data():
+    from warera_rankings.client import profile_activity
+
+    activity = profile_activity(
+        {
+            "dates": {"lastWorkAt": "2026-10-04T07:29:16Z"},
+            "stats": {
+                "worksCount": 1411,
+                "wealth": {"money": "0.004", "weapons": 0, "equipments": 0},
+            },
+            "missions": {
+                "claimedCount": 515,
+                "claimedAt": {"starting": "2026-08-15T19:48:59Z", "weekly": "2026-10-03T12:00:00Z"},
+            },
+        }
+    )
+    assert activity.works_count == 1411
+    assert activity.missions_count == 515
+    assert activity.money == Decimal("0.004")
+    assert activity.equipment_value == 0
+    assert activity.last_mission_at.day == 3
+    malformed = profile_activity(
+        {
+            "dates": {"lastWorkAt": "2026-10-04T07:29:16"},
+            "stats": {"worksCount": True, "wealth": {"money": -1, "weapons": "NaN"}},
+            "missions": {"claimedCount": -1, "claimedAt": {"starting": "2026-08-15T19:48:59Z"}},
+        }
+    )
+    assert all(value is None for value in malformed.model_dump().values())
+
+
 def test_wrong_profile_id_is_not_assigned_to_another_player():
     profiles = execute(
         lambda _: httpx.Response(200, json=[result({"_id": "b", "username": "Bob"})]),

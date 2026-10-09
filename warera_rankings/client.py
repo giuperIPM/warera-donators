@@ -6,7 +6,7 @@ from typing import Any
 
 import httpx
 
-from .domain import ITALY_ID, Donation, DonationPage, Profile, RankingError
+from .domain import ITALY_ID, Activity, Donation, DonationPage, Profile, RankingError
 
 BASE_URL = "https://api2.warera.io/trpc/"
 
@@ -25,6 +25,53 @@ def unwrap(payload: Any) -> Any:
         return payload["result"]["data"]
     except (KeyError, TypeError) as error:
         raise RankingError("Risposta WarEra non valida") from error
+
+
+def optional_money(value: Any) -> Decimal | None:
+    try:
+        return money(value) if value is not None else None
+    except (ValueError, InvalidOperation):
+        return None
+
+
+def optional_date(value: Any) -> datetime | None:
+    try:
+        instant = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return instant if instant.tzinfo is not None else None
+    except (AttributeError, TypeError, ValueError):
+        return None
+
+
+def profile_activity(data: dict) -> Activity:
+    dates = data.get("dates")
+    dates = dates if isinstance(dates, dict) else {}
+    stats = data.get("stats")
+    stats = stats if isinstance(stats, dict) else {}
+    wealth = stats.get("wealth")
+    wealth = wealth if isinstance(wealth, dict) else {}
+    missions = data.get("missions")
+    missions = missions if isinstance(missions, dict) else {}
+    claimed = missions.get("claimedAt")
+    claimed = claimed if isinstance(claimed, dict) else {}
+    mission_dates = [
+        optional_date(claimed.get(period)) for period in ("daily", "weekly", "monthly")
+    ]
+    equipment = optional_money(wealth.get("equipments"))
+    weapons = optional_money(wealth.get("weapons"))
+    works_count = stats.get("worksCount")
+    missions_count = missions.get("claimedCount")
+    return Activity(
+        last_work_at=optional_date(dates.get("lastWorkAt")),
+        last_mission_at=max((date for date in mission_dates if date is not None), default=None),
+        works_count=works_count if type(works_count) is int and works_count >= 0 else None,
+        missions_count=missions_count
+        if type(missions_count) is int and missions_count >= 0
+        else None,
+        money=optional_money(wealth.get("money")),
+        equipment_value=equipment + weapons
+        if equipment is not None and weapons is not None
+        else None,
+    )
 
 
 class WarEraClient:
@@ -146,7 +193,13 @@ class WarEraClient:
                 level = leveling.get("level") if isinstance(leveling, dict) else None
                 level = level if type(level) is int and level >= 0 else None
                 profiles[player] = Profile(
-                    player, data["username"], total, companies, avatar, level
+                    player,
+                    data["username"],
+                    total,
+                    companies,
+                    avatar,
+                    level,
+                    profile_activity(data),
                 )
             except (KeyError, TypeError, ValueError, InvalidOperation, RankingError):
                 continue

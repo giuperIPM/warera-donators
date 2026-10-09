@@ -27,6 +27,40 @@ server HTTP, aggiornamento continuo o sito web. Template HTML/CSS locale per gen
 - P è patrimonio osservato durante l'esecuzione, non guadagno settimanale o sola liquidità.
   Una riesecuzione può modificare P; non esiste recupero storico del wealth in questa versione.
 
+## Esclusione possibili quit
+
+`config.toml`, sezione `quit_detection`, letta dal CLI; percorso alternativo con `--config`.
+Attivo nel file distribuito; `enabled = false` ripristina la selezione originale senza
+analisi, campo `quit_exclusions` o snapshot attività. La formula del rapporto resta invariata.
+Escludere i sospetti dai 50 candidati prima di scegliere la top 10 e riassegnare le posizioni.
+Totali e conteggi delle donazioni includono comunque tutti i player.
+
+Sette segnali: `low_work`, `low_missions`, `low_money`, `low_equipment`, `low_companies`,
+`concentrated_donations`, `donations_exceed_wealth`. Un sospetto richiede l’ultimo segnale,
+almeno due fra denaro/equipaggiamento/aziende e almeno `minimum_signals` complessivi (default 4).
+L’euristica rileva possibili liquidazioni; non conferma l’abbandono.
+
+Soglie inclusive: al massimo 5 lavori, 5 missioni, 10 denaro, 100 valore armi + equip,
+1.000 valore aziende. Aziende valutate con `stats.wealth.companies`, non il numero posseduto.
+Donazioni concentrate: almeno 80% dell’importo settimanale in una finestra mobile di 10 minuti,
+con almeno due transazioni. Donazioni maggiori di P: confronto stretto, senza arrotondamento.
+Finestre sulle sole donazioni già filtrate/deduplicate della settimana. Nessuna chiamata aggiuntiva.
+
+`dates.lastWorkAt`, `missions.claimedAt` daily/weekly/monthly, `stats.worksCount`,
+`missions.claimedCount` e componenti del wealth letti nel batch esistente.
+Ignorare la missione introduttiva `starting`. Dati mancanti/invalidi sconosciuti, mai zero.
+Nel JSON `quit_exclusions` include ID, nome e valutazione: segnali, segnali sconosciuti,
+delta lavori/missioni e quota concentrata. Campo assente se disattivato.
+
+Snapshot locali atomici `activity-<lunedì di fine settimana>.json`, con istante reale
+e attività dei candidati con profilo disponibile. Conservare la prima osservazione.
+Usare delta di contatori solo se entrambe le osservazioni cadono nella prima ora dopo
+il lunedì di inizio/fine periodo. Contatori diminuiti o player assenti nel precedente
+snapshot: delta sconosciuto. In assenza di delta valido, ultimo lavoro/missione precedente
+a fine settimana meno `inactive_days` (default 3) genera il rispettivo segnale.
+Una data assente rimane sconosciuta. Snapshot corrotti interrompono il job; assenti sono normali.
+Nessun database. Esecuzioni tardive non ricostruiscono attività o patrimonio alla chiusura.
+
 ## Esecuzione e output
 
 Chiave da `WARERA_API_KEY`, header `X-API-Key`. Comando `python -m warera_rankings`,
@@ -111,6 +145,8 @@ Test grafici su escaping, formattazione, risultati vuoti/provvisori, fallback av
 limiti download, PNG generato da Chromium, nomi lunghi e conservazione del PNG su errore.
 Lista membri verificata con HTTP simulato: schema, deduplicazione, lista vuota,
 timeout, errori HTTP e dati invalidi; colori verificati per ID e fallback bianco con Chromium.
+Quit: toggle config, esclusioni e recupero top 10, soglie, valori sconosciuti, date recenti,
+concentrazione per importo/finestra mobile, delta contatori, reset, snapshot tardivi e riesecuzioni.
 
 Riferimenti: [API WarEra](https://api2.warera.io/docs/),
 [client di riferimento](https://github.com/WarEraProjects/api-client-py).

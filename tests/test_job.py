@@ -6,6 +6,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from warera_rankings.config import QuitConfig
 from warera_rankings.domain import ITALY_ID, RankingError, Week, WeeklyRanking
 from warera_rankings.job import export, run
 
@@ -56,7 +57,8 @@ def test_missing_key_fails_before_network_and_export(tmp_path):
     assert not directory.exists()
 
 
-def test_job_fetches_closed_week_batches_profiles_and_exports(tmp_path, monkeypatch):
+@pytest.mark.parametrize("quit_enabled", [False, True])
+def test_job_fetches_closed_week_batches_profiles_and_exports(tmp_path, monkeypatch, quit_enabled):
     week = Week.previous(datetime.now(UTC))
     requests = []
 
@@ -107,7 +109,7 @@ def test_job_fetches_closed_week_batches_profiles_and_exports(tmp_path, monkeypa
         return client_type(transport=httpx.MockTransport(handler), **kwargs)
 
     monkeypatch.setattr("warera_rankings.job.httpx.AsyncClient", client)
-    ranking, path, calls = asyncio.run(run("test-key", tmp_path))
+    ranking, path, calls = asyncio.run(run("test-key", tmp_path, QuitConfig(enabled=quit_enabled)))
     data = json.loads(path.read_text())
     assert calls == len(requests) == 2
     assert ranking.donation_count == 1
@@ -117,6 +119,8 @@ def test_job_fetches_closed_week_batches_profiles_and_exports(tmp_path, monkeypa
     assert data["rows"][0]["level"] == 26
     assert data["coverage"] == "week_boundary_reached"
     assert "test-key" not in path.read_text()
+    assert (tmp_path / f"activity-{week.end.date()}.json").exists() == quit_enabled
+    assert ("quit_exclusions" in data) == quit_enabled
 
 
 def test_image_failure_exits_with_error_and_keeps_exported_json(tmp_path, monkeypatch):
@@ -124,7 +128,7 @@ def test_image_failure_exits_with_error_and_keeps_exported_json(tmp_path, monkey
 
     ranking = snapshot()
 
-    async def calculate(api_key, directory):
+    async def calculate(api_key, directory, quit_config=None):
         return ranking, export(ranking, directory), 0
 
     async def fail_image(ranking, target):

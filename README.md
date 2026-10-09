@@ -10,6 +10,42 @@ La top 10 riguarda esclusivamente i 50 candidati: il rapporto viene ordinato pri
 dell'arrotondamento. Parità: importo donato decrescente, poi ID crescente.
 Candidati con rapporto non calcolabile esclusi; il risultato può contenere meno di 10 player.
 
+## Controllo possibili quit
+
+Configurazione in `config.toml`, selezionabile con `--config`. Il controllo è attivo:
+impostare `[quit_detection] enabled = false` per disabilitarlo.
+I sospetti vengono esclusi prima della top 10, che viene completata con i candidati
+rimanenti fra i 50 iniziali. Il JSON contiene `quit_exclusions` con player e segnali;
+con controllo disattivato questo campo e gli snapshot non vengono generati.
+Totali delle donazioni invariati, inclusi gli esclusi.
+
+Regola: donazioni settimanali maggiori del patrimonio escluso aziende,
+almeno due segnali patrimoniali e almeno `minimum_signals` segnali complessivi.
+Soglie iniziali modificabili nel file:
+
+| Segnale | Soglia |
+| --- | --- |
+| Poco lavoro | Al massimo 5 lavori nella settimana |
+| Poche missioni | Al massimo 5 missioni nella settimana |
+| Poco denaro | Al massimo 10 |
+| Poco equipaggiamento | Armi + equipaggiamento al massimo 100 |
+| Basso valore delle aziende | Al massimo 1.000, esclusi dalla somma di armi/equip |
+| Donazioni concentrate | Almeno l’80% dell’importo in 10 minuti, almeno 2 donazioni |
+| Donazioni superiori al patrimonio netto | Rapporto strettamente maggiore del 100% |
+
+I segnali patrimoniali sono denaro, equipaggiamento e valore aziende: quest’ultimo
+è una soglia sul valore, non sul numero di aziende. Minimo iniziale: 4 segnali.
+È un’euristica di possibile liquidazione, non una conferma dell’abbandono.
+
+I conteggi di lavori/missioni sono cumulativi nelle API: si confrontano gli snapshot
+`data/activity-YYYY-MM-DD.json` dei due lunedì, acquisiti entro un’ora dalle 00:00 UTC.
+Sono salvati per i 50 candidati con i dati disponibili, senza altre chiamate API.
+La prima rilevazione viene conservata anche nelle riesecuzioni della stessa settimana.
+Se manca una rilevazione valida, si cercano lavoro e missioni non aggiornati da oltre
+3 giorni rispetto alla chiusura della settimana. Date o valori mancanti sono sconosciuti,
+mai zero; contatori diminuiti non producono un delta. Una rilevazione tardiva non
+ricostruisce il patrimonio o l’attività storica. I file attività restano locali e ignorati da Git.
+
 ## Avvio
 
 ```bash
@@ -94,6 +130,7 @@ Installare il progetto in `/opt/warera-rankings`, creare l'utente `warera` e ass
 accesso al progetto e alla directory dati. Installazione runtime:
 `python -m pip install -e '.[image]'`, poi installare Chromium come indicato sopra.
 Il servizio genera JSON e PNG durante la stessa esecuzione.
+Conservare `config.toml` nella directory del progetto; il servizio lo legge a ogni avvio.
 
 Copiare `deploy/warera-rankings.service` e `deploy/warera-rankings.timer` in
 `/etc/systemd/system/`, poi:
