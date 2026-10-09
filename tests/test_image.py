@@ -93,6 +93,9 @@ def test_avatar_download_is_bounded_and_failures_use_fallback(scenario):
 
 
 def test_chromium_renders_png_without_clipping(ranking, tmp_path):
+    ranking.rows[0].player_id = "69e60890fe61f8ad03b860ba"
+    ranking.rows[1].username = "Giancarlo_Devasini"
+
     async def check():
         target = await render_image(ranking, tmp_path / "ranking.png")
         png = target.read_bytes()
@@ -106,6 +109,12 @@ def test_chromium_renders_png_without_clipping(ranking, tmp_path):
                 page = await browser.new_page(viewport={"width": 1200, "height": 900})
                 await page.set_content(render_html(ranking, {}))
                 assert await page.locator("tbody tr").count() == 10
+                names = page.locator(".username")
+                gold = await page.locator(".edition").evaluate("el => getComputedStyle(el).color")
+                assert await names.nth(0).evaluate("el => getComputedStyle(el).color") == gold
+                assert await names.nth(1).evaluate("el => getComputedStyle(el).color") == (
+                    "rgb(238, 243, 248)"
+                )
                 assert await page.evaluate("document.documentElement.scrollWidth") == 1200
                 for cell in await page.locator("td").all():
                     bounds = await cell.bounding_box()

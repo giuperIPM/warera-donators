@@ -52,8 +52,15 @@ Larghezza 1200 px e altezza adattata al contenuto. Righe nello stesso ordine del
 posizione, nome, avatar, livello, donazioni, patrimonio escluso aziende e percentuale
 a tre decimali, con separatori italiani. Titolo «Classifica settimanale donatori»
 e periodo senza etichetta UTC, seguiti direttamente dalla tabella. Nessun riepilogo
-di totali o conteggi e nessuna nota in calce. Bandierina e «WARERA / ITALIA» sulla stessa riga.
+di totali o conteggi. Bandierina e «WARERA / ITALIA» sulla stessa riga.
 Medaglie SVG oro, argento e bronzo per le prime tre posizioni; numeri per le successive.
+Membri Confindustria letti da `warera_rankings/data/confindustria.json`, array di ID
+incluso nel pacchetto e validato prima del rendering. Corrispondenza per ID, mai per nome.
+Nome dei membri oro (`#f0c776`, come «TOP 10»), altri bianco. Legenda in fondo:
+«Nome bianco = player», «Nome oro = membro Confindustria» e
+«Patrimonio al netto del valore delle aziende». Classifica JSON e ordinamento invariati.
+Lista iniziale: Giancarlo_Devasini `69e60890fe61f8ad03b860ba`,
+LordPirla `69d4dd1c70ab5601d0eb54d9`; ID e nomi verificati sulle API WarEra.
 Copertura non verificata segnalata come risultato provvisorio. Lista vuota gestita.
 
 Nomi sottoposti a escaping HTML. Avatar scaricati in parallelo con HTTPX, timeout 8 secondi,

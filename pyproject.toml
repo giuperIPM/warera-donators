@@ -22,7 +22,7 @@ warera-rankings = "warera_rankings.job:main"
 warera-ranking-image = "warera_rankings.image:main"
 
 [tool.setuptools.package-data]
-warera_rankings = ["templates/*.html"]
+warera_rankings = ["templates/*.html", "data/*.json"]
 
 [tool.setuptools.packages.find]
 include = ["warera_rankings*"]

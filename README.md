@@ -66,9 +66,15 @@ python -m warera_rankings.image data/italy-2026-09-28.json
 Il PNG ha lo stesso nome del JSON e larghezza 1200 px; `--output` permette di scegliere
 un altro percorso. Il template modificabile è `warera_rankings/templates/weekly.html`.
 Mostra l'ordine del JSON, avatar, livello, donazioni, patrimonio escluso aziende e rapporto
-a tre decimali. Titolo «Classifica settimanale donatori», periodo e tabella, senza riepilogo
-o note in calce. Bandierina e «WARERA / ITALIA» sono sulla stessa riga.
+a tre decimali. Titolo «Classifica settimanale donatori», periodo e tabella, senza riepilogo.
+Bandierina e «WARERA / ITALIA» sono sulla stessa riga.
 Le prime tre posizioni mostrano medaglie oro, argento e bronzo.
+I membri Confindustria hanno il nome oro come «TOP 10», gli altri bianco. In fondo:
+legenda dei colori e «Patrimonio al netto del valore delle aziende».
+La lista è in `warera_rankings/data/confindustria.json`: un array di ID WarEra.
+Aggiungere o rimuovere un ID e rigenerare il PNG; il confronto usa l'ID, non il nome.
+Membri iniziali verificati: Giancarlo_Devasini (`69e60890fe61f8ad03b860ba`) e
+LordPirla (`69d4dd1c70ab5601d0eb54d9`). JSON della classifica e ordine restano invariati.
 Avatar non disponibili o invalidi sostituiti dall'iniziale del nome; nessun font esterno.
 Le immagini profilo vengono scaricate a ogni rendering: timeout 8 secondi e massimo 2 MB
 per avatar. Queste richieste sono aggiuntive rispetto alle chiamate alle API WarEra.

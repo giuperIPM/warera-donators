@@ -13,6 +13,7 @@ from playwright.async_api import async_playwright
 from pydantic import ValidationError
 
 from .domain import RankingError, WeeklyRanking
+from .memberships import load_confindustria_members
 
 
 def italian_number(value: Decimal | None, places: int = 3) -> str:
@@ -50,6 +51,7 @@ def render_html(ranking: WeeklyRanking, avatars: dict[str, str | None]) -> str:
     return environment.get_template("weekly.html").render(
         ranking=ranking,
         avatars=avatars,
+        confindustria_members=load_confindustria_members(),
         last_day=ranking.week_end - timedelta(days=1),
     )
 
