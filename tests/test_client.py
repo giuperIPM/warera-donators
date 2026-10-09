@@ -49,17 +49,6 @@ def test_page_input_auth_cursor_and_decimal_parsing():
     assert page.cursor == "second"
 
 
-def test_alternative_donation_fields():
-    item = transaction()
-    item["userId"] = item.pop("buyerId")
-    item["countryId"] = item.pop("sellerCountryId")
-    page = execute(
-        lambda _: httpx.Response(200, json=result({"items": [item]})),
-        lambda client: client.donation_page(None),
-    )
-    assert page.donations[0].player_id == "a"
-
-
 @pytest.mark.parametrize(
     "data",
     [
@@ -68,7 +57,7 @@ def test_alternative_donation_fields():
         {"items": [transaction(money=-1)]},
         {"items": [transaction(money="NaN")]},
         {"items": [transaction(createdAt="2026-10-09T08:00:00")]},
-        {"items": [transaction(userId="conflicting")]},
+        {"items": [transaction(buyerId=None)]},
     ],
 )
 def test_invalid_donation_data_fails_explicitly(data):

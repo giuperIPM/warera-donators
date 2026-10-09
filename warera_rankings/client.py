@@ -32,6 +32,7 @@ class WarEraClient:
         self.http = http
         self.headers = {"X-API-Key": api_key}
         self.delay = 0.0
+        self.request_count = 0
 
     async def _get(self, procedure: str, inputs: dict, batch: bool = False) -> Any:
         params = {"input": json.dumps(inputs, separators=(",", ":"))}
@@ -40,6 +41,7 @@ class WarEraClient:
         for attempt in range(3):
             await asyncio.sleep(self.delay)
             try:
+                self.request_count += 1
                 response = await self.http.get(
                     BASE_URL + procedure, params=params, headers=self.headers
                 )
@@ -102,14 +104,8 @@ class WarEraClient:
         if not isinstance(timestamp, str):
             raise ValueError
         created_at = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        player = item.get("buyerId") or item.get("userId")
-        country = item.get("sellerCountryId") or item.get("countryId")
-        if (item.get("buyerId") and item.get("userId") and item["buyerId"] != item["userId"]) or (
-            item.get("sellerCountryId")
-            and item.get("countryId")
-            and item["sellerCountryId"] != item["countryId"]
-        ):
-            raise ValueError
+        player = item["buyerId"]
+        country = item["sellerCountryId"]
         if created_at.tzinfo is None or not all(
             isinstance(value, str) and value for value in (item["_id"], player, country)
         ):

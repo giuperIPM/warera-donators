@@ -11,7 +11,7 @@ NOW = datetime(2026, 10, 9, 10, tzinfo=UTC)
 
 
 def donation(id, player="a", amount="10", at=None, country=ITALY_ID):
-    return Donation(id, player, country, Decimal(amount), at or NOW.replace(day=8))
+    return Donation(id, player, country, Decimal(amount), at or NOW.replace(day=1))
 
 
 class Gateway:
@@ -33,7 +33,7 @@ def calculate(gateway, max_pages=200):
 
 
 def test_aggregation_deduplication_and_period_boundaries():
-    start = Week.containing(NOW).start
+    start = Week.previous(NOW).start
     duplicate = donation("1", amount="0.1")
     gateway = Gateway(
         [
@@ -100,7 +100,7 @@ def test_no_donations_skips_profile_request():
     "pages",
     [
         [DonationPage([donation("1")], "x"), DonationPage([donation("2")], "x")],
-        [DonationPage([donation("1", at=NOW.replace(day=7)), donation("2")], None)],
+        [DonationPage([donation("1", at=datetime(2026, 9, 30, tzinfo=UTC)), donation("2")], None)],
         [DonationPage([], "next")],
     ],
 )
@@ -119,22 +119,54 @@ def test_page_limit_does_not_produce_partial_ranking():
     [
         (
             datetime(2026, 3, 29, 12, tzinfo=UTC),
-            "2026-03-22T23:00:00+00:00",
-            "2026-03-29T22:00:00+00:00",
+            "2026-03-16T00:00:00+00:00",
+            "2026-03-23T00:00:00+00:00",
         ),
         (
             datetime(2026, 10, 25, 12, tzinfo=UTC),
-            "2026-10-18T22:00:00+00:00",
-            "2026-10-25T23:00:00+00:00",
+            "2026-10-12T00:00:00+00:00",
+            "2026-10-19T00:00:00+00:00",
+        ),
+        (
+            datetime(2026, 10, 5, 0, tzinfo=UTC),
+            "2026-09-28T00:00:00+00:00",
+            "2026-10-05T00:00:00+00:00",
         ),
         (
             datetime(2026, 10, 4, 22, tzinfo=UTC),
-            "2026-10-04T22:00:00+00:00",
-            "2026-10-11T22:00:00+00:00",
+            "2026-09-21T00:00:00+00:00",
+            "2026-09-28T00:00:00+00:00",
         ),
     ],
 )
-def test_calendar_week_handles_dst_and_local_monday(instant, start, end):
-    week = Week.containing(instant)
+def test_previous_week_is_always_a_completed_utc_week(instant, start, end):
+    week = Week.previous(instant)
     assert week.start.isoformat() == start
     assert week.end.isoformat() == end
+    assert week.end - week.start == timedelta(days=7)
+
+
+def test_end_boundary_is_excluded():
+    week = Week.previous(NOW)
+    gateway = Gateway(
+        [
+            DonationPage(
+                [
+                    donation("end", at=week.end),
+                    donation("last", at=week.end - timedelta(microseconds=1)),
+                    donation("old", at=week.start - timedelta(microseconds=1)),
+                ],
+                None,
+            )
+        ]
+    )
+    result = calculate(gateway)
+    assert result.donation_count == 1
+    assert result.donated_total == 10
+    assert result.donations_until == week.end
+    assert result.timezone == "UTC"
+
+
+def test_naive_timestamp_is_rejected():
+    with pytest.raises(ValueError):
+        Week.previous(datetime(2026, 10, 5))

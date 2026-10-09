@@ -27,7 +27,7 @@ class RankingService:
         self.max_pages = max_pages
 
     async def calculate(self, instant: datetime) -> WeeklyRanking:
-        week = Week.containing(instant)
+        week = Week.previous(instant)
         totals: dict[str, Decimal] = defaultdict(Decimal)
         counts: dict[str, int] = defaultdict(int)
         seen: set[str] = set()
@@ -47,7 +47,7 @@ class RankingService:
                 previous_date = donation.created_at
                 if donation.created_at < week.start:
                     reached_start = True
-                elif donation.created_at < instant and donation.country_id == ITALY_ID:
+                elif donation.created_at < week.end and donation.country_id == ITALY_ID:
                     totals[donation.player_id] += donation.amount
                     counts[donation.player_id] += 1
             if reached_start:
@@ -64,6 +64,7 @@ class RankingService:
             raise RankingError("Limite di pagine raggiunto prima di completare la scansione")
 
         player_ids = sorted(totals, key=lambda player: (-totals[player], player))[:TOP_PLAYERS]
+        wealth_observed_at = datetime.now(UTC)
         profiles = await self.gateway.profiles(player_ids) if player_ids else {}
         rows = [
             self._row(index, player, totals[player], counts[player], profiles.get(player))
@@ -72,11 +73,13 @@ class RankingService:
         return WeeklyRanking(
             week_start=week.start,
             week_end=week.end,
-            donations_until=instant,
+            donations_until=week.end,
             generated_at=datetime.now(UTC),
+            wealth_observed_at=wealth_observed_at,
             coverage=coverage,
             donor_count=len(totals),
             donation_count=sum(counts.values()),
+            donated_total=sum(totals.values(), Decimal(0)),
             rows=rows,
         )
 

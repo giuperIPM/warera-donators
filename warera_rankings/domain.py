@@ -1,13 +1,11 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel
 
 ITALY_ID = "6813b6d446e731854c7ac7a2"
 TOP_PLAYERS = 50
-ROME = ZoneInfo("Europe/Rome")
 
 
 class RankingError(Exception):
@@ -20,14 +18,14 @@ class Week:
     end: datetime
 
     @classmethod
-    def containing(cls, instant: datetime) -> "Week":
+    def previous(cls, instant: datetime) -> "Week":
         if instant.tzinfo is None:
             raise ValueError("Il timestamp deve includere il fuso orario")
-        local = instant.astimezone(ROME)
-        start = (local - timedelta(days=local.weekday())).replace(
+        utc = instant.astimezone(UTC)
+        end = (utc - timedelta(days=utc.weekday())).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
-        return cls(start.astimezone(UTC), (start + timedelta(days=7)).astimezone(UTC))
+        return cls(end - timedelta(days=7), end)
 
 
 @dataclass(frozen=True)
@@ -68,12 +66,14 @@ class RankingRow(BaseModel):
 
 class WeeklyRanking(BaseModel):
     country: str = "it"
-    timezone: str = "Europe/Rome"
+    timezone: str = "UTC"
     week_start: datetime
     week_end: datetime
     donations_until: datetime
     generated_at: datetime
+    wealth_observed_at: datetime
     coverage: str
     donor_count: int
     donation_count: int
+    donated_total: Decimal
     rows: list[RankingRow]
