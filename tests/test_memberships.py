@@ -3,7 +3,6 @@ import asyncio
 import httpx
 import pytest
 
-from warera_rankings.domain import RankingError
 from warera_rankings.memberships import MEMBERS_URL, load_confindustria_members
 
 
@@ -46,20 +45,17 @@ def test_empty_membership_list_is_valid():
         "{",
     ],
 )
-def test_invalid_public_list_fails_explicitly(content):
-    with pytest.raises(RankingError, match="non valida"):
-        fetch(lambda request: httpx.Response(200, text=content))
+def test_invalid_public_list_uses_empty_fallback(content):
+    assert fetch(lambda request: httpx.Response(200, text=content)) == frozenset()
 
 
 @pytest.mark.parametrize("status", [404, 429, 503])
-def test_http_failure_is_reported(status):
-    with pytest.raises(RankingError, match="non raggiungibile"):
-        fetch(lambda request: httpx.Response(status))
+def test_http_failure_uses_empty_fallback(status):
+    assert fetch(lambda request: httpx.Response(status)) == frozenset()
 
 
-def test_timeout_is_reported():
+def test_timeout_uses_empty_fallback():
     def handler(request):
         raise httpx.ReadTimeout("timeout", request=request)
 
-    with pytest.raises(RankingError, match="non raggiungibile"):
-        fetch(handler)
+    assert fetch(handler) == frozenset()

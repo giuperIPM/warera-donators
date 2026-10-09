@@ -184,15 +184,34 @@ def test_image_command_renders_empty_ranking_without_changing_json(ranking, tmp_
     assert source.read_bytes() == original
 
 
-def test_membership_failure_preserves_previous_png(ranking, tmp_path, monkeypatch):
+def test_membership_failure_generates_new_png_with_white_names(ranking, tmp_path, monkeypatch):
+    from warera_rankings.memberships import load_confindustria_members
+
+    ranking.rows[0].player_id = "69e60890fe61f8ad03b860ba"
     target = tmp_path / "ranking.png"
     target.write_bytes(b"previous")
+    client_type = httpx.AsyncClient
+    original_evaluate = Page.evaluate
 
-    async def unavailable(http):
-        raise RankingError("Lista membri Confindustria non raggiungibile")
+    def client(**kwargs):
+        return client_type(
+            transport=httpx.MockTransport(lambda request: httpx.Response(503)), **kwargs
+        )
 
-    monkeypatch.setattr("warera_rankings.image.load_confindustria_members", unavailable)
-    with pytest.raises(RankingError, match="Confindustria"):
-        asyncio.run(render_image(ranking, target))
-    assert target.read_bytes() == b"previous"
+    async def evaluate(page, expression, *args, **kwargs):
+        result = await original_evaluate(page, expression, *args, **kwargs)
+        colors = await original_evaluate(
+            page,
+            "[...document.querySelectorAll('.username')].map(el => getComputedStyle(el).color)",
+        )
+        assert colors == ["rgb(238, 243, 248)"] * len(ranking.rows)
+        return result
+
+    monkeypatch.setattr("warera_rankings.image.httpx.AsyncClient", client)
+    monkeypatch.setattr(
+        "warera_rankings.image.load_confindustria_members", load_confindustria_members
+    )
+    monkeypatch.setattr(Page, "evaluate", evaluate)
+    asyncio.run(render_image(ranking, target))
+    assert target.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
     assert list(tmp_path.iterdir()) == [target]

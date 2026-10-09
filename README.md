@@ -75,7 +75,7 @@ La lista viene aggiornata a ogni rendering dalla
 [API pubblica Confindustria](https://confindustria-rust.vercel.app/players.json).
 Formato: array di oggetti con `id` e `name`; il confronto usa solo l'ID.
 Una richiesta aggiuntiva, senza chiave, con timeout 8 secondi. Se la risposta è invalida
-o il servizio non è raggiungibile, il rendering termina con errore e conserva il PNG precedente.
+o il servizio non è raggiungibile, il PNG viene generato con tutti i nomi bianchi.
 Nessuna lista locale sostitutiva. JSON della classifica e ordine restano invariati.
 Avatar non disponibili o invalidi sostituiti dall'iniziale del nome; nessun font esterno.
 Le immagini profilo vengono scaricate a ogni rendering: timeout 8 secondi e massimo 2 MB

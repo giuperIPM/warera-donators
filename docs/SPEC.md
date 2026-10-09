@@ -58,7 +58,8 @@ Membri Confindustria letti da `https://confindustria-rust.vercel.app/players.jso
 a ogni rendering: una GET pubblica senza chiave, timeout 8 secondi, nessun retry.
 Risposta: array di oggetti con `id` e `name`; estrarre e validare gli ID WarEra,
 deduplicandoli. Array vuoto valido. Corrispondenza per ID, mai per nome.
-Errori HTTP/rete o dati invalidi interrompono il rendering senza sostituire il PNG precedente.
+Errori HTTP/rete o dati invalidi usano una lista vuota: generare comunque il PNG
+con tutti i nomi bianchi, senza evidenziare membri Confindustria.
 Nessuna lista locale sostitutiva o cache persistente.
 Nome dei membri oro (`#f0c776`, come «TOP 10»), altri bianco. Legenda in fondo:
 «Nome bianco = player», «Nome oro = membro Confindustria» e
@@ -109,7 +110,7 @@ con rete simulata ed esportazione atomica. Ruff e pytest eseguiti anche in CI.
 Test grafici su escaping, formattazione, risultati vuoti/provvisori, fallback avatar,
 limiti download, PNG generato da Chromium, nomi lunghi e conservazione del PNG su errore.
 Lista membri verificata con HTTP simulato: schema, deduplicazione, lista vuota,
-timeout, errori HTTP e dati invalidi; colori verificati per ID con Chromium.
+timeout, errori HTTP e dati invalidi; colori verificati per ID e fallback bianco con Chromium.
 
 Riferimenti: [API WarEra](https://api2.warera.io/docs/),
 [client di riferimento](https://github.com/WarEraProjects/api-client-py).
