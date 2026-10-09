@@ -7,7 +7,8 @@
     * { box-sizing: border-box; }
     body { margin: 0; background: #101823; color: #eef3f8; font-family: "DejaVu Sans", Arial, sans-serif; }
     main { width: 1200px; padding: 46px 48px 32px; background: radial-gradient(ellipse at top right, #22394b, #101823 65%); }
-    .tricolor { display: flex; width: 72px; height: 7px; border-radius: 2px; overflow: hidden; margin-bottom: 20px; }
+    .brand { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+    .tricolor { display: flex; width: 72px; height: 7px; border-radius: 2px; overflow: hidden; }
     .tricolor span { flex: 1; background: #f0f1ef; }
     .tricolor span:first-child { background: #31aa72; }
     .tricolor span:last-child { background: #e66063; }
@@ -39,10 +40,12 @@
 </head>
 <body>
 <main>
-  <div class="tricolor"><span></span><span></span><span></span></div>
+  <div class="brand">
+    <div class="tricolor"><span></span><span></span><span></span></div>
+    <div class="eyebrow">WARERA / ITALIA</div>
+  </div>
   <header>
     <div>
-      <div class="eyebrow">WARERA / ITALIA</div>
       <h1>Classifica settimanale donatori</h1>
       <div class="period">{{ ranking.week_start.strftime('%d.%m.%Y') }} — {{ last_day.strftime('%d.%m.%Y') }}</div>
     </div>

@@ -67,7 +67,7 @@ Il PNG ha lo stesso nome del JSON e larghezza 1200 px; `--output` permette di sc
 un altro percorso. Il template modificabile è `warera_rankings/templates/weekly.html`.
 Mostra l'ordine del JSON, avatar, livello, donazioni, patrimonio escluso aziende e rapporto
 a tre decimali. Titolo «Classifica settimanale donatori», periodo e tabella, senza riepilogo
-o note in calce.
+o note in calce. Bandierina e «WARERA / ITALIA» sono sulla stessa riga.
 Avatar non disponibili o invalidi sostituiti dall'iniziale del nome; nessun font esterno.
 Le immagini profilo vengono scaricate a ogni rendering: timeout 8 secondi e massimo 2 MB
 per avatar. Queste richieste sono aggiuntive rispetto alle chiamate alle API WarEra.

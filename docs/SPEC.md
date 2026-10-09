@@ -52,7 +52,7 @@ Larghezza 1200 px e altezza adattata al contenuto. Righe nello stesso ordine del
 posizione, nome, avatar, livello, donazioni, patrimonio escluso aziende e percentuale
 a tre decimali, con separatori italiani. Titolo «Classifica settimanale donatori»
 e periodo senza etichetta UTC, seguiti direttamente dalla tabella. Nessun riepilogo
-di totali o conteggi e nessuna nota in calce.
+di totali o conteggi e nessuna nota in calce. Bandierina e «WARERA / ITALIA» sulla stessa riga.
 Copertura non verificata segnalata come risultato provvisorio. Lista vuota gestita.
 
 Nomi sottoposti a escaping HTML. Avatar scaricati in parallelo con HTTPX, timeout 8 secondi,
